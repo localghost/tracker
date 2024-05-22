@@ -66,8 +66,6 @@ fn main() {
                 "duration": -1,
             }))
             .send()
-            .unwrap()
-            .text()
             .unwrap();
         println!("started");
     }
