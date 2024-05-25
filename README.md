@@ -4,7 +4,7 @@ A simple CLI to toggle current time entry in https://track.toggl.com/timer
 
 ## Authentication
 
-Authentication is via API Token. The CLI expects for it to be in `TOGGLE_TRACK_TOKEN` environment
+Authentication is via API Token. The CLI expects for it to be in `TOGGL_TRACK_TOKEN` environment
 variable.
 
 > [!TIP]

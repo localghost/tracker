@@ -1,5 +1,6 @@
 #![allow(clippy::needless_return)]
 
+use anyhow::{anyhow, Context};
 use clap::{Parser, Subcommand};
 use serde::Deserialize;
 
@@ -78,10 +79,12 @@ fn status(client: &reqwest::blocking::Client, token: &str) -> Option<TrackingEnt
     }
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let args = CliArgs::parse();
 
-    let token = std::env::var("TOGGLE_TRACK_TOKEN").unwrap();
+    let token = std::env::var("TOGGL_TRACK_TOKEN").map_err(|_| {
+        anyhow!("Please set TOGGL_TRACK_TOKEN environment variable with the API token")
+    })?;
 
     let mut headers = reqwest::header::HeaderMap::new();
     headers.insert(
@@ -94,23 +97,21 @@ fn main() {
         .unwrap();
 
     match args.command {
-        Some(CliCommand::Status) => {
-            match status(&client, &token) {
-                Some(_) => println!("running"),
-                None => println!("stopped"),
+        Some(CliCommand::Status) => match status(&client, &token) {
+            Some(_) => println!("running"),
+            None => println!("stopped"),
+        },
+        None => match status(&client, &token) {
+            Some(current_entry) => {
+                stop(&client, &token, &current_entry);
+                println!("stopped");
             }
-        }
-        None => {
-            match status(&client, &token) {
-                Some(current_entry) => {
-                    stop(&client, &token, &current_entry);
-                    println!("stopped");
-                },
-                None => {
-                    start(&client, &token);
-                    println!("started");
-                },
+            None => {
+                start(&client, &token);
+                println!("started");
             }
-        }
+        },
     }
+
+    Ok(())
 }
