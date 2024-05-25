@@ -18,6 +18,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           RUSTTARGET: x86_64-unknown-linux-musl
+          ARCHIVE_NAME: tracker_${{ env.GITHUB_REF_NAME }}_x86_64.tar.gz
           ARCHIVE_TYPES: tar.gz
           MINIFY: "true"
           TOOLCHAIN_VERSION: stable
