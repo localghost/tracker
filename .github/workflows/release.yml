@@ -5,20 +5,40 @@ on:
     types: [published]
 
 jobs:
-  release:
-    name: release
+  # release:
+  #   name: release
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write
+  #   steps:
+  #     - uses: actions/checkout@master
+  #     - name: Compile and release
+  #       uses: rust-build/rust-build.action@master
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       with:
+  #         RUSTTARGET: x86_64-unknown-linux-musl
+  #         ARCHIVE_NAME: tracker_${{ github.ref_name }}_x86_64
+  #         ARCHIVE_TYPES: tar.gz
+  #         MINIFY: "true"
+  #         TOOLCHAIN_VERSION: stable
+  # create-release:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: taiki-e/create-gh-release-action@v1
+  #       with:
+  #         # (optional) Path to changelog.
+  #         changelog: CHANGELOG.md
+  #         # (required) GitHub token for creating GitHub Releases.
+  #         token: ${{ secrets.GITHUB_TOKEN }}
+  upload-assets:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - uses: actions/checkout@master
-      - name: Compile and release
-        uses: rust-build/rust-build.action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
+      - uses: taiki-e/upload-rust-binary-action@v1
         with:
-          RUSTTARGET: x86_64-unknown-linux-musl
-          ARCHIVE_NAME: tracker_${{ github.ref_name }}_x86_64
-          ARCHIVE_TYPES: tar.gz
-          MINIFY: "true"
-          TOOLCHAIN_VERSION: stable
+          bin: tracker
+          target: x86_64-unknown-linux-gnu
+          archive: tracker-$tag-x86_64
+          token: ${{ secrets.GITHUB_TOKEN }}
