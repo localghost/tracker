@@ -12,10 +12,10 @@ variable.
 
 ## Usage
 
-Running the command will stop current time entry if there is one running otherwise it will start a
+Running the cli will stop current time entry if there is one running otherwise it will start a
 new one.
 
-Running the command with `status` subcommand will show if there is a time entry running or not.
+Running the cli with `status` sub-command will show if there is a time entry running or not.
 
 Example:
 ```
