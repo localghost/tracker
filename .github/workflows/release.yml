@@ -41,5 +41,5 @@ jobs:
           bin: tracker
           target: x86_64-unknown-linux-gnu
           archive: tracker-$tag-x86_64
-          ref: tag/$tag
+          ref: refs/tags/$tag
           token: ${{ secrets.GITHUB_TOKEN }}
