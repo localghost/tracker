@@ -23,7 +23,7 @@ $ tracker
 started
 
 $ tracker status
-running
+running for 28 minute(s) and 49 second(s)
 
 $ tracker
 stopped
