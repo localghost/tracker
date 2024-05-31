@@ -1,6 +1,7 @@
 #![allow(clippy::needless_return)]
 
 use anyhow::{anyhow, Context};
+use chrono::{DateTime, Utc};
 use clap::{Parser, Subcommand};
 use serde::Deserialize;
 
@@ -8,6 +9,7 @@ use serde::Deserialize;
 struct TrackingEntry {
     id: u32,
     workspace_id: u32,
+    start: DateTime<Utc>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -79,6 +81,35 @@ fn status(client: &reqwest::blocking::Client, token: &str) -> Option<TrackingEnt
     }
 }
 
+fn get_entry_duration_human(entry: &TrackingEntry) -> String {
+    let delta = Utc::now() - entry.start;
+    let mut components = Vec::new();
+
+    let seconds = delta.num_seconds();
+    if seconds > 3600 {
+        components.push(format!("{} hour(s)", seconds / 3600));
+    }
+
+    let seconds = seconds % 3600;
+    if seconds > 60 {
+        components.push(format!("{} minute(s)", seconds / 60));
+    }
+
+    let seconds = seconds % 60;
+    if seconds > 0 {
+        components.push(format!("{} second(s)", seconds));
+    }
+
+    if components.len() > 1 {
+        return format!(
+            "{} and {}",
+            components[0..components.len() - 1].join(", "),
+            components[components.len() - 1]
+        );
+    }
+    return components.last().unwrap().to_string();
+}
+
 fn main() -> anyhow::Result<()> {
     let args = CliArgs::parse();
 
@@ -98,7 +129,9 @@ fn main() -> anyhow::Result<()> {
 
     match args.command {
         Some(CliCommand::Status) => match status(&client, &token) {
-            Some(_) => println!("running"),
+            Some(entry) => {
+                println!("running for {}", get_entry_duration_human(&entry));
+            }
             None => println!("stopped"),
         },
         None => match status(&client, &token) {
