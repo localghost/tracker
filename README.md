@@ -40,6 +40,6 @@ already stopped
 $ tracker start
 started
 
-$tracker stop
+$ tracker stop
 stopped
 ```
