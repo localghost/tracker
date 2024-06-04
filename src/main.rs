@@ -1,6 +1,6 @@
 #![allow(clippy::needless_return)]
 
-use anyhow::{anyhow, Context};
+use anyhow::anyhow;
 use chrono::{DateTime, Utc};
 use clap::{Parser, Subcommand};
 use serde::Deserialize;
@@ -26,6 +26,8 @@ struct CliArgs {
 #[derive(Subcommand)]
 enum CliCommand {
     Status,
+    Stop,
+    Start,
 }
 
 fn start(client: &reqwest::blocking::Client, token: &str) {
@@ -133,6 +135,22 @@ fn main() -> anyhow::Result<()> {
                 println!("running for {}", get_entry_duration_human(&entry));
             }
             None => println!("stopped"),
+        },
+        Some(CliCommand::Stop) => match status(&client, &token) {
+            Some(entry) => {
+                stop(&client, &token, &entry);
+                println!("stopped");
+            }
+            None => println!("already stopped"),
+        },
+        Some(CliCommand::Start) => match status(&client, &token) {
+            Some(_) => {
+                println!("already running");
+            }
+            None => {
+                start(&client, &token);
+                println!("started");
+            }
         },
         None => match status(&client, &token) {
             Some(current_entry) => {
