@@ -25,9 +25,21 @@ started
 $ tracker status
 running for 28 minute(s) and 49 second(s)
 
+$ tracker start
+already running
+
 $ tracker
 stopped
 
 $ tracker status
+stopped
+
+$ tracker stop
+already stopped
+
+$ tracker start
+started
+
+$tracker stop
 stopped
 ```
