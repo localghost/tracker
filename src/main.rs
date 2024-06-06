@@ -1,7 +1,7 @@
 #![allow(clippy::needless_return)]
 
 use anyhow::anyhow;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveTime, TimeDelta, Utc};
 use clap::{Parser, Subcommand};
 use serde::Deserialize;
 
@@ -10,6 +10,7 @@ struct TrackingEntry {
     id: u32,
     workspace_id: u32,
     start: DateTime<Utc>,
+    duration: i64,
 }
 
 #[derive(Deserialize, Debug)]
@@ -45,7 +46,6 @@ fn start(client: &reqwest::blocking::Client, token: &str) {
             workspaces[0].id
         ))
         .basic_auth(token, Some("api_token"))
-        // '{"created_with":"API example code","description":"Hello Toggl","tags":[],"billable":false,"workspace_id":{workspace_id},"duration":-1,"start":"1984-06-08T11:02:53.000Z","stop":null}'
         .json(&serde_json::json!({
             "start": chrono::Utc::now().to_rfc3339(),
             "created_with": "tracker CLI",
@@ -83,11 +83,10 @@ fn status(client: &reqwest::blocking::Client, token: &str) -> Option<TrackingEnt
     }
 }
 
-fn get_entry_duration_human(entry: &TrackingEntry) -> String {
-    let delta = Utc::now() - entry.start;
+fn format_duration_human(duration: &TimeDelta) -> String {
     let mut components = Vec::new();
 
-    let seconds = delta.num_seconds();
+    let seconds = duration.num_seconds();
     if seconds > 3600 {
         components.push(format!("{} hour(s)", seconds / 3600));
     }
@@ -112,6 +111,25 @@ fn get_entry_duration_human(entry: &TrackingEntry) -> String {
     return components.last().unwrap().to_string();
 }
 
+fn get_entries(
+    client: &reqwest::blocking::Client,
+    token: &str,
+    start_date: chrono::DateTime<Utc>,
+    end_date: chrono::DateTime<Utc>,
+) -> Vec<TrackingEntry> {
+    return client
+        .get("https://api.track.toggl.com/api/v9/me/time_entries")
+        .basic_auth(token, Some("api_token"))
+        .query(&[
+            ("start_date", start_date.to_rfc3339()),
+            ("end_date", end_date.to_rfc3339()),
+        ])
+        .send()
+        .unwrap()
+        .json::<Vec<TrackingEntry>>()
+        .unwrap();
+}
+
 fn main() -> anyhow::Result<()> {
     let args = CliArgs::parse();
 
@@ -130,12 +148,38 @@ fn main() -> anyhow::Result<()> {
         .unwrap();
 
     match args.command {
-        Some(CliCommand::Status) => match status(&client, &token) {
-            Some(entry) => {
-                println!("running for {}", get_entry_duration_human(&entry));
+        Some(CliCommand::Status) => {
+            match status(&client, &token) {
+                Some(entry) => {
+                    println!(
+                        "current: {}",
+                        format_duration_human(&(Utc::now() - entry.start))
+                    );
+                }
+                None => println!("current: stopped"),
             }
-            None => println!("stopped"),
-        },
+            let total_duration = get_entries(
+                &client,
+                &token,
+                Utc::now()
+                    .with_time(NaiveTime::from_hms_opt(0, 0, 0).unwrap())
+                    .unwrap(),
+                Utc::now(),
+            )
+            .iter()
+            .map(|entry| {
+                if entry.duration == -1 {
+                    (Utc::now() - entry.start).num_seconds()
+                } else {
+                    entry.duration
+                }
+            })
+            .sum::<i64>();
+            println!(
+                "today: {}",
+                format_duration_human(&TimeDelta::seconds(total_duration))
+            );
+        }
         Some(CliCommand::Stop) => match status(&client, &token) {
             Some(entry) => {
                 stop(&client, &token, &entry);

@@ -23,7 +23,8 @@ $ tracker
 started
 
 $ tracker status
-running for 28 minute(s) and 49 second(s)
+current: 28 minute(s) and 49 second(s)
+today: 5 hour(s), 3 minute(s) and 1 second(s)
 
 $ tracker start
 already running
@@ -32,7 +33,8 @@ $ tracker
 stopped
 
 $ tracker status
-stopped
+current: stopped
+today: 5 hour(s), 3 minute(s) and 1 second(s)
 
 $ tracker stop
 already stopped
