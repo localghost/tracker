@@ -25,6 +25,7 @@ started
 $ tracker status
 current: 28 minute(s) and 49 second(s)
 today: 5 hour(s), 3 minute(s) and 1 second(s)
+week: 37 hour(s) and 23 minute(s)
 
 $ tracker start
 already running
@@ -35,6 +36,7 @@ stopped
 $ tracker status
 current: stopped
 today: 5 hour(s), 3 minute(s) and 1 second(s)
+week: 37 hour(s) and 23 minute(s)
 
 $ tracker stop
 already stopped
