@@ -1,7 +1,7 @@
 #![allow(clippy::needless_return)]
 
 use anyhow::anyhow;
-use chrono::{DateTime, NaiveTime, TimeDelta, Utc};
+use chrono::{DateTime, Datelike, NaiveTime, TimeDelta, Utc};
 use clap::{Parser, Subcommand};
 use serde::Deserialize;
 
@@ -101,21 +101,24 @@ fn format_duration_human(duration: &TimeDelta) -> String {
         components.push(format!("{} second(s)", seconds));
     }
 
-    if components.len() > 1 {
-        return format!(
-            "{} and {}",
-            components[0..components.len() - 1].join(", "),
-            components[components.len() - 1]
-        );
-    }
-    return components.last().unwrap().to_string();
+    return match components.len() {
+        0 => "none".to_string(),
+        1 => components.last().unwrap().to_string(),
+        _ => {
+            format!(
+                "{} and {}",
+                components[0..components.len() - 1].join(", "),
+                components[components.len() - 1]
+            )
+        }
+    };
 }
 
 fn get_entries(
     client: &reqwest::blocking::Client,
     token: &str,
-    start_date: chrono::DateTime<Utc>,
-    end_date: chrono::DateTime<Utc>,
+    start_date: &chrono::DateTime<Utc>,
+    end_date: &chrono::DateTime<Utc>,
 ) -> Vec<TrackingEntry> {
     return client
         .get("https://api.track.toggl.com/api/v9/me/time_entries")
@@ -128,6 +131,24 @@ fn get_entries(
         .unwrap()
         .json::<Vec<TrackingEntry>>()
         .unwrap();
+}
+
+fn get_entries_duration_between(
+    client: &reqwest::blocking::Client,
+    token: &str,
+    start: &DateTime<Utc>,
+    end: &DateTime<Utc>,
+) -> TimeDelta {
+    return get_entries(client, token, start, end)
+        .iter()
+        .map(|entry| {
+            if entry.duration == -1 {
+                Utc::now() - entry.start
+            } else {
+                TimeDelta::seconds(entry.duration)
+            }
+        })
+        .sum::<TimeDelta>();
 }
 
 fn main() -> anyhow::Result<()> {
@@ -158,27 +179,26 @@ fn main() -> anyhow::Result<()> {
                 }
                 None => println!("current: stopped"),
             }
-            let total_duration = get_entries(
+            let now = Utc::now();
+            let today_duration = get_entries_duration_between(
                 &client,
                 &token,
-                Utc::now()
+                &now
                     .with_time(NaiveTime::from_hms_opt(0, 0, 0).unwrap())
                     .unwrap(),
-                Utc::now(),
-            )
-            .iter()
-            .map(|entry| {
-                if entry.duration == -1 {
-                    (Utc::now() - entry.start).num_seconds()
-                } else {
-                    entry.duration
-                }
-            })
-            .sum::<i64>();
-            println!(
-                "today: {}",
-                format_duration_human(&TimeDelta::seconds(total_duration))
+                &now,
             );
+            println!("today: {}", format_duration_human(&today_duration));
+            let week_duration = get_entries_duration_between(
+                &client,
+                &token,
+                &(now
+                    .with_time(NaiveTime::from_hms_opt(0, 0, 0).unwrap())
+                    .unwrap()
+                    - TimeDelta::days(now.weekday().num_days_from_monday() as i64)),
+                &now,
+            );
+            println!("week: {}", format_duration_human(&week_duration));
         }
         Some(CliCommand::Stop) => match status(&client, &token) {
             Some(entry) => {
