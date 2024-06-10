@@ -170,16 +170,17 @@ fn main() -> anyhow::Result<()> {
 
     match args.command {
         Some(CliCommand::Status) => {
+            let now = Utc::now();
             match status(&client, &token) {
                 Some(entry) => {
                     println!(
                         "current: {}",
-                        format_duration_human(&(Utc::now() - entry.start))
+                        format_duration_human(&(now - entry.start))
                     );
                 }
                 None => println!("current: stopped"),
             }
-            let now = Utc::now();
+            // TODO: get entries once (for the week) and calculate duration for both today and week
             let today_duration = get_entries_duration_between(
                 &client,
                 &token,
