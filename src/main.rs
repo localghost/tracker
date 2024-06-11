@@ -139,11 +139,12 @@ fn get_entries_duration_between(
     start: &DateTime<Utc>,
     end: &DateTime<Utc>,
 ) -> TimeDelta {
+    let now = Utc::now();
     return get_entries(client, token, start, end)
         .iter()
         .map(|entry| {
-            if entry.duration == -1 {
-                Utc::now() - entry.start
+            if entry.duration < 0 {
+                now - entry.start
             } else {
                 TimeDelta::seconds(entry.duration)
             }
