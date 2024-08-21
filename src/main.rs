@@ -174,10 +174,7 @@ fn main() -> anyhow::Result<()> {
             let now = Utc::now();
             match status(&client, &token) {
                 Some(entry) => {
-                    println!(
-                        "current: {}",
-                        format_duration_human(&(now - entry.start))
-                    );
+                    println!("current: {}", format_duration_human(&(now - entry.start)));
                 }
                 None => println!("current: stopped"),
             }
@@ -185,8 +182,7 @@ fn main() -> anyhow::Result<()> {
             let today_duration = get_entries_duration_between(
                 &client,
                 &token,
-                &now
-                    .with_time(NaiveTime::from_hms_opt(0, 0, 0).unwrap())
+                &now.with_time(NaiveTime::from_hms_opt(0, 0, 0).unwrap())
                     .unwrap(),
                 &now,
             );
@@ -204,7 +200,10 @@ fn main() -> anyhow::Result<()> {
             let month_duration = get_entries_duration_between(
                 &client,
                 &token,
-                &now.with_day(1).unwrap(),
+                &now.with_time(NaiveTime::from_hms_opt(0, 0, 0).unwrap())
+                    .unwrap()
+                    .with_day(1)
+                    .unwrap(),
                 &now,
             );
             println!("month: {}", format_duration_human(&month_duration));
