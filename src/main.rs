@@ -201,6 +201,13 @@ fn main() -> anyhow::Result<()> {
                 &now,
             );
             println!("week: {}", format_duration_human(&week_duration));
+            let month_duration = get_entries_duration_between(
+                &client,
+                &token,
+                &now.with_day(1).unwrap(),
+                &now,
+            );
+            println!("month: {}", format_duration_human(&month_duration));
         }
         Some(CliCommand::Stop) => match status(&client, &token) {
             Some(entry) => {
