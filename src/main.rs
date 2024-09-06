@@ -4,6 +4,7 @@ use anyhow::anyhow;
 use chrono::{DateTime, Datelike, NaiveTime, TimeDelta, Utc};
 use clap::{Parser, Subcommand};
 use serde::Deserialize;
+use std::io::Write;
 
 #[derive(Deserialize, Debug)]
 struct TrackingEntry {
@@ -152,13 +153,7 @@ fn get_entries_duration_between(
         .sum::<TimeDelta>();
 }
 
-fn main() -> anyhow::Result<()> {
-    let args = CliArgs::parse();
-
-    let token = std::env::var("TOGGL_TRACK_TOKEN").map_err(|_| {
-        anyhow!("Please set TOGGL_TRACK_TOKEN environment variable with the API token")
-    })?;
-
+fn run(args: CliArgs, token: &str) -> anyhow::Result<()> {
     let mut headers = reqwest::header::HeaderMap::new();
     headers.insert(
         reqwest::header::CONTENT_TYPE,
@@ -172,69 +167,83 @@ fn main() -> anyhow::Result<()> {
     match args.command {
         Some(CliCommand::Status) => {
             let now = Utc::now();
-            match status(&client, &token) {
+            match status(&client, token) {
                 Some(entry) => {
-                    println!("current: {}", format_duration_human(&(now - entry.start)));
+                    writeln!(
+                        std::io::stdout(),
+                        "current: {}",
+                        format_duration_human(&(now - entry.start))
+                    )?;
                 }
-                None => println!("current: stopped"),
+                None => writeln!(std::io::stdout(), "current: stopped")?,
             }
             // TODO: get entries once (for the week) and calculate duration for both today and week
             let today_duration = get_entries_duration_between(
                 &client,
-                &token,
+                token,
                 &now.with_time(NaiveTime::from_hms_opt(0, 0, 0).unwrap())
                     .unwrap(),
                 &now,
             );
-            println!("today: {}", format_duration_human(&today_duration));
+            writeln!(std::io::stdout(), "today: {}", format_duration_human(&today_duration))?;
             let week_duration = get_entries_duration_between(
                 &client,
-                &token,
+                token,
                 &(now
                     .with_time(NaiveTime::from_hms_opt(0, 0, 0).unwrap())
                     .unwrap()
                     - TimeDelta::days(now.weekday().num_days_from_monday() as i64)),
                 &now,
             );
-            println!("week: {}", format_duration_human(&week_duration));
+            writeln!(std::io::stdout(), "week: {}", format_duration_human(&week_duration))?;
             let month_duration = get_entries_duration_between(
                 &client,
-                &token,
+                token,
                 &now.with_time(NaiveTime::from_hms_opt(0, 0, 0).unwrap())
                     .unwrap()
                     .with_day(1)
                     .unwrap(),
                 &now,
             );
-            println!("month: {}", format_duration_human(&month_duration));
+            writeln!(std::io::stdout(), "month: {}", format_duration_human(&month_duration))?;
         }
-        Some(CliCommand::Stop) => match status(&client, &token) {
+        Some(CliCommand::Stop) => match status(&client, token) {
             Some(entry) => {
-                stop(&client, &token, &entry);
-                println!("stopped");
+                stop(&client, token, &entry);
+                writeln!(std::io::stdout(), "stopped")?;
             }
-            None => println!("already stopped"),
+            None => writeln!(std::io::stdout(), "already stopped")?,
         },
-        Some(CliCommand::Start) => match status(&client, &token) {
+        Some(CliCommand::Start) => match status(&client, token) {
             Some(_) => {
-                println!("already running");
+                writeln!(std::io::stdout(), "already running")?;
             }
             None => {
-                start(&client, &token);
-                println!("started");
+                start(&client, token);
+                writeln!(std::io::stdout(), "started")?;
             }
         },
-        None => match status(&client, &token) {
+        None => match status(&client, token) {
             Some(current_entry) => {
-                stop(&client, &token, &current_entry);
-                println!("stopped");
+                stop(&client, token, &current_entry);
+                writeln!(std::io::stdout(), "stopped")?;
             }
             None => {
-                start(&client, &token);
-                println!("started");
+                start(&client, token);
+                writeln!(std::io::stdout(), "started")?;
             }
         },
     }
 
     Ok(())
+}
+
+fn main() -> anyhow::Result<()> {
+    let args = CliArgs::parse();
+
+    let token = std::env::var("TOGGL_TRACK_TOKEN").map_err(|_| {
+        anyhow!("Please set TOGGL_TRACK_TOKEN environment variable with the API token")
+    })?;
+
+    run(args, &token)
 }
