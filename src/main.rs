@@ -8,7 +8,7 @@ use std::io::Write;
 
 #[derive(Deserialize, Debug)]
 struct TrackingEntry {
-    id: u32,
+    id: u64,
     workspace_id: u32,
     start: DateTime<Utc>,
     duration: i64,
@@ -16,7 +16,7 @@ struct TrackingEntry {
 
 #[derive(Deserialize, Debug)]
 struct Workspace {
-    id: u32,
+    id: u64,
 }
 
 #[derive(Parser)]
@@ -185,7 +185,11 @@ fn run(args: CliArgs, token: &str) -> anyhow::Result<()> {
                     .unwrap(),
                 &now,
             );
-            writeln!(std::io::stdout(), "today: {}", format_duration_human(&today_duration))?;
+            writeln!(
+                std::io::stdout(),
+                "today: {}",
+                format_duration_human(&today_duration)
+            )?;
             let week_duration = get_entries_duration_between(
                 &client,
                 token,
@@ -195,7 +199,11 @@ fn run(args: CliArgs, token: &str) -> anyhow::Result<()> {
                     - TimeDelta::days(now.weekday().num_days_from_monday() as i64)),
                 &now,
             );
-            writeln!(std::io::stdout(), "week: {}", format_duration_human(&week_duration))?;
+            writeln!(
+                std::io::stdout(),
+                "week: {}",
+                format_duration_human(&week_duration)
+            )?;
             let month_duration = get_entries_duration_between(
                 &client,
                 token,
@@ -205,7 +213,11 @@ fn run(args: CliArgs, token: &str) -> anyhow::Result<()> {
                     .unwrap(),
                 &now,
             );
-            writeln!(std::io::stdout(), "month: {}", format_duration_human(&month_duration))?;
+            writeln!(
+                std::io::stdout(),
+                "month: {}",
+                format_duration_human(&month_duration)
+            )?;
         }
         Some(CliCommand::Stop) => match status(&client, token) {
             Some(entry) => {
